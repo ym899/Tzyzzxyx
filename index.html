@@ -1,117 +1,135 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>霓虹装甲 · 坦克大战</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, maximum-scale=1">
+<title>星穹防线 Stellar Vanguard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: #05070f; }
-  body {
-    display: flex; align-items: center; justify-content: center;
-    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-    color: #e6f1ff;
-    -webkit-user-select: none; user-select: none;
+  :root {
+    --bg: #0a0e1a;
+    --cyan: #00f0ff;
+    --purple: #a855f7;
+    --pink: #ff2d95;
+    --text: #e6f1ff;
   }
-  #wrap { position: relative; }
-  canvas#game {
-    display: block; width: min(100vw, 100vh, 920px); height: min(100vw, 100vh, 920px);
-    background: #0a0e1a; box-shadow: 0 0 60px rgba(0,240,255,.12);
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+  body { font-family: 'Orbitron', 'Rajdhani', 'Segoe UI', system-ui, sans-serif; color: var(--text); }
+  #game { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+  #loading {
+    position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+    color: var(--cyan); letter-spacing: 6px; font-size: 16px; background: var(--bg);
+    text-shadow: 0 0 12px var(--cyan); animation: pulse 1.2s ease-in-out infinite;
   }
+  @keyframes pulse { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
 
   .overlay {
-    position: absolute; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 14px;
-    background: radial-gradient(ellipse at center, rgba(10,14,26,.88), rgba(5,7,15,.96));
-    text-align: center; z-index: 10;
+    position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 26px;
+    background: radial-gradient(ellipse at 50% 30%, rgba(30,40,80,.55), rgba(8,10,24,.92));
+    backdrop-filter: blur(3px);
   }
   .hidden { display: none !important; }
-  h1 { font-size: 44px; letter-spacing: 6px; font-weight: 800; }
-  h1 .neon {
-    color: #00f0ff; text-shadow: 0 0 12px #00f0ff, 0 0 34px rgba(0,240,255,.6);
+  .title {
+    font-size: clamp(40px, 8vw, 76px); font-weight: 700; letter-spacing: 8px; color: var(--cyan);
+    text-shadow: 0 0 18px var(--cyan), 0 0 40px rgba(0,240,255,.5);
   }
-  .sub { color: #7ea4c8; letter-spacing: 3px; font-size: 13px; }
-  .label { color: #7ea4c8; letter-spacing: 2px; font-size: 13px; margin-top: 6px; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-  button {
-    background: rgba(0,240,255,.06); color: #e6f1ff; border: 1px solid rgba(0,240,255,.35);
-    padding: 10px 18px; font-size: 15px; letter-spacing: 2px; cursor: pointer;
-    border-radius: 4px; transition: all .15s ease; font-family: inherit;
+  .subtitle { letter-spacing: 6px; font-size: 14px; color: var(--purple); margin-top: -16px; }
+  .panel {
+    background: rgba(12,16,30,.8); border: 1px solid rgba(0,240,255,.35); border-radius: 14px;
+    padding: 26px 32px; display: flex; flex-direction: column; gap: 20px; min-width: 320px;
+    box-shadow: 0 0 30px rgba(0,240,255,.12), inset 0 0 20px rgba(0,240,255,.05);
   }
-  button:hover { background: rgba(0,240,255,.18); box-shadow: 0 0 12px rgba(0,240,255,.4); }
-  button.sel {
-    background: rgba(0,240,255,.25); border-color: #00f0ff; color: #fff;
-    box-shadow: 0 0 14px rgba(0,240,255,.6);
+  .row { display: flex; flex-direction: column; gap: 10px; }
+  .lab { font-size: 12px; letter-spacing: 3px; color: var(--purple); }
+  .seg { display: flex; gap: 8px; }
+  .seg-btn {
+    flex: 1; padding: 10px 0; background: transparent; color: var(--text); cursor: pointer;
+    border: 1px solid rgba(0,240,255,.3); border-radius: 8px; font-family: inherit; letter-spacing: 2px;
+    transition: all .15s;
   }
-  button.start {
-    margin-top: 10px; padding: 13px 40px; font-size: 18px; color: #05131a;
-    background: #00f0ff; border: none; font-weight: 800; letter-spacing: 4px;
+  .seg-btn:hover { border-color: var(--cyan); }
+  .seg-btn.active { background: rgba(0,240,255,.15); color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 14px rgba(0,240,255,.4); }
+  .planes { display: flex; gap: 10px; }
+  .plane-card {
+    flex: 1; padding: 14px 8px; text-align: center; cursor: pointer; border-radius: 10px;
+    border: 1px solid rgba(0,240,255,.2); transition: all .15s; color: var(--text);
   }
-  button.start:hover { box-shadow: 0 0 22px #00f0ff; }
-  .hint { color: #58718a; font-size: 12px; line-height: 1.8; letter-spacing: 1px; }
-  #resultTitle { font-size: 40px; letter-spacing: 4px; font-weight: 800; }
-  #resultTitle.win { color: #3dffa0; text-shadow: 0 0 14px rgba(61,255,160,.7); }
-  #resultTitle.lose { color: #ff2d95; text-shadow: 0 0 14px rgba(255,45,149,.7); }
-  #stats { color: #bcd2e6; font-size: 15px; line-height: 2.1; letter-spacing: 1px; }
+  .plane-card .pn { font-size: 15px; letter-spacing: 2px; display: block; }
+  .plane-card .pd { font-size: 11px; color: #8899bb; margin-top: 5px; display: block; }
+  .plane-card.active { border-color: var(--cyan); box-shadow: 0 0 18px rgba(0,240,255,.45); }
+  .start-btn {
+    padding: 14px; font-family: inherit; font-size: 18px; letter-spacing: 6px; cursor: pointer;
+    color: #04121a; background: var(--cyan); border: none; border-radius: 10px; font-weight: 700;
+    box-shadow: 0 0 24px rgba(0,240,255,.6); transition: transform .1s;
+  }
+  .start-btn:hover { transform: scale(1.03); }
+  .start-btn.ghost { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); box-shadow: none; }
+  .hint { font-size: 12px; color: #667799; letter-spacing: 1px; text-align: center; line-height: 1.7; }
+  .stat { display: flex; justify-content: space-between; font-size: 15px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .stat span { color: #8899bb; letter-spacing: 2px; }
+  .stat b { color: var(--cyan); }
+  .btn-row { display: flex; gap: 12px; margin-top: 6px; }
+  .btn-row .start-btn { flex: 1; font-size: 15px; letter-spacing: 3px; }
 </style>
 </head>
 <body>
-  <div id="wrap">
-    <canvas id="game"></canvas>
+<canvas id="game"></canvas>
+<div id="loading">LOADING</div>
 
-    <div id="menu" class="overlay">
-      <h1>NEON <span class="neon">ARMOR</span></h1>
-      <div class="sub">霓 虹 装 甲 · 坦 克 大 战</div>
-
-      <div class="label">选择难度</div>
-      <div class="row" id="diffRow">
-        <button data-diff="easy">简单</button>
-        <button data-diff="normal" class="sel">普通</button>
-        <button data-diff="hard">困难</button>
-      </div>
-
-      <div class="label">选择战车</div>
-      <div class="row" id="tankRow">
-        <button data-tank="assault" class="sel">突击者</button>
-        <button data-tank="titan">泰坦</button>
-        <button data-tank="phantom">幽灵</button>
-      </div>
-
-      <button class="start" id="startBtn">开始游戏</button>
-      <div class="hint">
-        WASD / 方向键 移动 · 鼠标瞄准 · 左键/空格 射击<br>
-        E / 右键 大招 · 1 2 3 道具 · P / Esc 暂停
+<div id="menu" class="overlay">
+  <h1 class="title">星穹防线</h1>
+  <p class="subtitle">STELLAR VANGUARD</p>
+  <div class="panel">
+    <div class="row">
+      <span class="lab">难度 DIFFICULTY</span>
+      <div class="seg" id="diff-seg">
+        <button class="seg-btn" data-diff="easy">简单</button>
+        <button class="seg-btn active" data-diff="normal">普通</button>
+        <button class="seg-btn" data-diff="hard">困难</button>
       </div>
     </div>
-
-    <div id="result" class="overlay hidden">
-      <div id="resultTitle">胜利</div>
-      <div id="stats"></div>
-      <div class="row">
-        <button id="nextBtn" class="start">下一关</button>
-        <button id="retryBtn">重试本关</button>
-        <button id="menuBtn">返回菜单</button>
-      </div>
+    <div class="row">
+      <span class="lab">战机 SELECT</span>
+      <div class="planes" id="plane-list"></div>
     </div>
+    <button class="start-btn" id="start-btn">开始游戏</button>
+  </div>
+  <p class="hint">WASD / 方向键 / 鼠标 / 触摸移动 · 空格或左键=炸弹 · E 或右键=大招 · P 或 Esc=暂停</p>
+</div>
 
-    <div id="pause" class="overlay hidden">
-      <h1>暂停中</h1>
-      <div class="row">
-        <button id="resumeBtn" class="start">继续</button>
-        <button id="pauseMenuBtn">返回菜单</button>
-      </div>
+<div id="pause" class="overlay hidden">
+  <h1 class="title" style="font-size:40px;">已暂停</h1>
+  <div class="panel">
+    <button class="start-btn" id="resume-btn">继续</button>
+    <button class="start-btn ghost" id="pause-menu-btn">返回菜单</button>
+  </div>
+</div>
+
+<div id="result" class="overlay hidden">
+  <h1 class="title" id="result-title" style="font-size:46px;">通关</h1>
+  <div class="panel">
+    <div class="stat"><span>得分 SCORE</span><b id="r-score">0</b></div>
+    <div class="stat"><span>最高连击 COMBO</span><b id="r-combo">0</b></div>
+    <div class="stat"><span>金币 GOLD</span><b id="r-coins">0</b></div>
+    <div class="stat"><span>用时 TIME</span><b id="r-time">0s</b></div>
+    <div class="stat"><span>评级 RANK</span><b id="r-rank">C</b></div>
+    <div class="btn-row">
+      <button class="start-btn" id="restart-btn">继续</button>
+      <button class="start-btn ghost" id="menu-btn">返回菜单</button>
     </div>
   </div>
+</div>
 
-  <script src="src/util.js"></script>
-  <script src="src/config.js"></script>
-  <script src="src/input.js"></script>
-  <script src="src/audio.js"></script>
-  <script src="src/map.js"></script>
-  <script src="src/danmaku.js"></script>
-  <script src="src/entities.js"></script>
-  <script src="src/systems.js"></script>
-  <script src="src/ui.js"></script>
-  <script src="src/main.js"></script>
+<script src="./src/util.js"></script>
+<script src="./src/config.js"></script>
+<script src="./src/input.js"></script>
+<script src="./src/audio.js"></script>
+<script src="./src/background.js"></script>
+<script src="./src/entities.js"></script>
+<script src="./src/ui.js"></script>
+<script src="./src/main.js"></script>
 </body>
 </html>
